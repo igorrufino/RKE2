@@ -1,0 +1,11 @@
+controller:
+  env:
+    - name: ARGOCD_SYNC_WAVE_DELAY
+      value: "10"
+configs:
+  cm:
+    create: true
+  params:
+    server.insecure: true
+dex:
+  enabled: false

@@ -1,0 +1,79 @@
+# CronJob para auto-unseal do Vault
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-unsealer
+  namespace: vault
+spec:
+  # Executa a cada minuto
+  schedule: "*/1 * * * *"
+  
+  # Manter apenas os últimos 3 jobs
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: vault-unsealer
+        spec:
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: vault-unsealer
+            image: hashicorp/vault:1.15.2
+            
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🔍 Verificando status do Vault..."
+              
+              # Aguardar Vault estar disponível
+              while ! vault status >/dev/null 2>&1; do
+                echo "⏳ Aguardando Vault estar disponível..."
+                sleep 10
+              done
+              
+              # Verificar se está selado
+              if vault status | grep -q "Sealed.*true"; then
+                echo "🔒 Vault está selado - iniciando unseal..."
+                
+                # Fazer unseal com as 3 chaves
+                vault operator unseal $UNSEAL_KEY_1
+                echo "🔑 Chave 1 aplicada"
+                
+                vault operator unseal $UNSEAL_KEY_2  
+                echo "🔑 Chave 2 aplicada"
+                
+                vault operator unseal $UNSEAL_KEY_3
+                echo "🔑 Chave 3 aplicada"
+                
+                echo "✅ Vault desbloqueado com sucesso!"
+              else
+                echo "✅ Vault já está desbloqueado"
+              fi
+            
+            env:
+            - name: VAULT_ADDR
+              value: "http://vault.vault.svc.cluster.local:8200"
+            
+            - name: UNSEAL_KEY_1
+              valueFrom:
+                secretKeyRef:
+                  name: vault-unseal-keys
+                  key: key1
+            
+            - name: UNSEAL_KEY_2
+              valueFrom:
+                secretKeyRef:
+                  name: vault-unseal-keys
+                  key: key2
+            
+            - name: UNSEAL_KEY_3
+              valueFrom:
+                secretKeyRef:
+                  name: vault-unseal-keys
+                  key: key3

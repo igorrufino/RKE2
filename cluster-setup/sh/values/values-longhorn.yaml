@@ -1,0 +1,32 @@
+# Longhorn Clean Production Values
+persistence:
+  # Número de réplicas para cada volume (3 = alta disponibilidade)
+  defaultClassReplicaCount: 3
+  
+  # Política de retenção - mantém dados mesmo se PVC for deletado
+  reclaimPolicy: Retain
+
+defaultSettings:
+  # Remove snapshots automaticamente durante trim do filesystem
+  removeSnapshotsDuringFilesystemTrim: enabled
+  
+  # # Caminho onde o Longhorn armazena os dados nos nós
+  # defaultDataPath: "/opt/longhorn"
+  
+  # Balanceamento automático de réplicas entre nós
+  replicaAutoBalance: best-effort
+# isso faz com que o Longhorn tente balancear as réplicas entre os nós, mas não é obrigatório mas isso pode ajudar a evitar problemas de performance se um nó ficar sobrecarregado
+  # e não afeta a disponibilidade do volume
+  # Configuração de balanceamento automático de réplicas do Longhorn pod mesmo ser útil em ambientes com nós heterogêneos, onde alguns nós podem ter mais recursos disponíveis que outros.
+  # Isso ajuda a distribuir a carga de trabalho de forma mais equilibrada entre os nós, melhorando a performance geral do cluster. ma isso é do pod ou volume
+  # Configuração de balanceamento automático de réplicas do Longhorn pode ser útil em ambientes com nós heterogêneos, onde alguns nós podem ter mais recursos disponíveis que outros.
+  # Isso ajuda a distribuir a carga de trabalho de forma mais equilibrada entre os nós, melhorando a performance geral do cluster. o que extamten issofaz? 
+  
+  
+  # Recuperação automática de volumes com problemas
+  autoSalvage: true
+  
+  # Desabilita snapshots automáticos
+  recurringJobSelector: ""
+  snapshotDataIntegrity: disabled
+  snapshotDataIntegrityImmediateCheckAfterSnapshotCreation: false

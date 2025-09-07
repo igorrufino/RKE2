@@ -1,0 +1,12 @@
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 500m
+metrics:
+  enabled: true
+metrics.serviceMonitor:
+  enabled: true
+  port: 9187
+primary:
+  persistence:
+    size: 10Gi

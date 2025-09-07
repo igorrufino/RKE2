@@ -1,0 +1,52 @@
+global:
+  enabled: true
+  tlsDisable: true
+
+injector:
+  enabled: true
+csi:
+  enabled: true
+
+server:
+  dataStorage:
+    enabled: false
+  
+  auditStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: "longhorn"
+    accessMode: ReadWriteOnce
+
+  # Desativar o modo standalone explicitamente
+  standalone:
+    enabled: false
+
+  # Configurar modo HA com PostgreSQL
+  ha:
+    enabled: true
+    replicas: 1
+    
+    # Configuração com a string de conexão hardcoded (não ideal para produção)
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address = "0.0.0.0:8200"
+        cluster_address = "0.0.0.0:8201"
+      }
+      
+      storage "postgresql" {
+        connection_url = "postgres://vault_user:use-a-strong-password@postgres-postgresql.default.svc.cluster.local:5432/vault?sslmode=disable"
+        ha_enabled = "true"
+        ha_table = "vault_ha_locks"
+      }
+    disruptionBudget:
+      enabled: true
+      maxUnavailable: 1
+
+ui:
+  enabled: true
+  serviceType: "ClusterIP"
+  externalPort: 8200
+  targetPort: 8200
