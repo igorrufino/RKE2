@@ -23,6 +23,23 @@
 
 set -e
 
+# =========================================================================
+# CONFIGURAÇÕES - EDITE AQUI CONFORME SUA NECESSIDADE
+# =========================================================================
+
+# Nós para aplicar taints (separados por espaço)
+TAINT_NODES=""
+
+# Configurações do taint
+TAINT_KEY="controlplane"
+TAINT_VALUE="true"
+TAINT_EFFECT="NoSchedule"
+
+# Tempo de espera após instalação (segundos)
+WAIT_TIME="10"
+
+# =========================================================================
+
 # Cores
 GREEN='\033[1;32m'
 BLUE='\033[1;34m'
@@ -51,6 +68,11 @@ echo -e "${CYAN}🔄 Atualizando lista de charts...${NC}"
 helm repo update
 echo
 
+# Configurando taints
+echo -e "${RED}🏷️  Aplicando taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT
+echo
+
 # Instalando Longhorn
 echo -e "${GREEN}💿 Instalando Longhorn...${NC}"
 helm install longhorn longhorn/longhorn --values ../values/values-longhorn.yaml --namespace longhorn-system --create-namespace
@@ -58,4 +80,13 @@ echo
 
 sleep 180
 
-echo -e "${GREEN}✅ Stack de persistência configurado com sucesso!${NC}"
+# Removendo taints
+echo -e "${GREEN}🏷️  Removendo taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT-
+echo
+
+echo -e "${GREEN}✅ Stack do Longhorn configurado com sucesso!${NC}"
+echo
+echo -e "${CYAN}📋 Configuração aplicada:${NC}"
+echo -e "Nós com taint: $TAINT_NODES"
+echo -e "Longhorn instalado no namespace: longhorn-system"

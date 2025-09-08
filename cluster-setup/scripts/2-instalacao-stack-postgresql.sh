@@ -23,6 +23,29 @@
 
 set -e
 
+# =========================================================================
+# CONFIGURAÇÕES - EDITE AQUI CONFORME SUA NECESSIDADE
+# =========================================================================
+
+# Nós para aplicar taints (separados por espaço)
+TAINT_NODES=""
+
+# Configurações do PostgreSQL
+POSTGRES_VERSION="16.4.9"
+POSTGRES_NAMESPACE="default"
+POSTGRES_RELEASE_NAME="postgres"
+POSTGRES_VALUES_FILE="../values/values-postgresql.yaml"
+
+# Configurações do taint
+TAINT_KEY="controlplane"
+TAINT_VALUE="true"
+TAINT_EFFECT="NoSchedule"
+
+# Tempo de espera após instalação (segundos)
+WAIT_TIME="10"
+
+# =========================================================================
+
 # Cores
 GREEN='\033[1;32m'
 BLUE='\033[1;34m'
@@ -32,25 +55,31 @@ CYAN='\033[1;36m'
 RED='\033[1;31m'
 NC='\033[0m'
 
-
-# Configurando taints para PostgreSQL
+# Configurando taints
 echo -e "${RED}🏷️  Aplicando taints temporários...${NC}"
-kubectl taint nodes srv-k8s-dev-002 srv-k8s-dev-003 srv-k8s-dev-004 controlplane=true:NoSchedule
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT
 echo
 
 # Instalando PostgreSQL
 echo -e "${BLUE}🗄️  Instalando PostgreSQL...${NC}"
-helm install postgres oci://registry-1.docker.io/bitnamicharts/postgresql --version 16.4.9 --namespace default --values ../values/values-postgresql.yaml
+helm install $POSTGRES_RELEASE_NAME oci://registry-1.docker.io/bitnamicharts/postgresql \
+    --version $POSTGRES_VERSION \
+    --namespace $POSTGRES_NAMESPACE \
+    --values $POSTGRES_VALUES_FILE
 echo
 
 # Aguardando PostgreSQL
-echo -e "${YELLOW}⏳ Aguardando 10 segundos...${NC}"
-sleep 10
+echo -e "${YELLOW}⏳ Aguardando $WAIT_TIME segundos...${NC}"
+sleep $WAIT_TIME
 echo
 
 # Removendo taints
 echo -e "${GREEN}🏷️  Removendo taints temporários...${NC}"
-kubectl taint nodes srv-k8s-dev-002 srv-k8s-dev-003 srv-k8s-dev-004 controlplane=true:NoSchedule-
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT-
 echo
 
-echo -e "${GREEN}✅ Stack de persistência configurado com sucesso!${NC}"
+echo -e "${GREEN}✅ Stack de PostgreSQL configurado com sucesso!${NC}"
+echo
+echo -e "${CYAN}📋 Configuração aplicada:${NC}"
+echo -e "PostgreSQL: $POSTGRES_RELEASE_NAME v$POSTGRES_VERSION"
+echo -e "Namespace: $POSTGRES_NAMESPACE"

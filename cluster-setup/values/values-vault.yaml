@@ -37,7 +37,7 @@ server:
       }
       
       storage "postgresql" {
-        connection_url = "postgres://vault_user:use-a-strong-password@postgres-postgresql.default.svc.cluster.local:5432/vault?sslmode=disable"
+        connection_url = "postgres://vault_user:password@postgres-postgresql.default.svc.cluster.local:5432/vault?sslmode=disable"
         ha_enabled = "true"
         ha_table = "vault_ha_locks"
       }

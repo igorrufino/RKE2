@@ -22,6 +22,24 @@
 
 set -e
 
+# =========================================================================
+# CONFIGURAÇÕES - EDITE AQUI CONFORME SUA NECESSIDADE
+# =========================================================================
+
+# Nós para aplicar taints (separados por espaço)
+TAINT_NODES=""
+
+# Configurações do taint
+TAINT_KEY="controlplane"
+TAINT_VALUE="true"
+TAINT_EFFECT="NoSchedule"
+
+# Tempo de espera após instalação (segundos)
+WAIT_TIME="10"
+
+# =========================================================================
+
+
 # Cores
 GREEN='\033[1;32m'
 BLUE='\033[1;34m'
@@ -29,6 +47,11 @@ YELLOW='\033[1;33m'
 PURPLE='\033[1;35m'
 CYAN='\033[1;36m'
 NC='\033[0m'
+
+# Configurando taints
+echo -e "${RED}🏷️  Aplicando taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT
+echo
 
 echo -e "${BLUE}🌐 Configurando rede e service mesh...${NC}"
 
@@ -51,5 +74,11 @@ echo
 echo -e "${GREEN}🕸️  Instalando Istio service mesh...${NC}"
 istioctl install --set profile=default -y
 echo
+
+# Removendo taints
+echo -e "${GREEN}🏷️  Removendo taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT-
+echo
+
 
 echo -e "${GREEN}✅ Rede e service mesh configurados com sucesso!${NC}"

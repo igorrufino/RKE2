@@ -27,6 +27,30 @@
 
 set -e
 
+# =========================================================================
+# CONFIGURAÇÕES - EDITE AQUI CONFORME SUA NECESSIDADE
+# =========================================================================
+
+# Nós para aplicar taints (separados por espaço)
+TAINT_NODES=""
+
+
+# Configurações do ArgoCD
+ARGOCD_VERSION="8.2.5"
+ARGOCD_NAMESPACE="argocd"
+ARGOCD_RELEASE_NAME="argocd"
+ARGOCD_VALUES_FILE="../values/values-argocd.yaml"
+
+# Configurações do taint
+TAINT_KEY="controlplane"
+TAINT_VALUE="true"
+TAINT_EFFECT="NoSchedule"
+
+# Tempo de espera após instalação (segundos)
+WAIT_TIME="10"
+
+# =========================================================================
+
 # Cores
 GREEN='\033[1;32m'
 BLUE='\033[1;34m'
@@ -36,16 +60,16 @@ CYAN='\033[1;36m'
 RED='\033[1;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}🚀 Instalando KEDA e ArgoCD...${NC}"
-
-# Instalando KEDA
-echo -e "${PURPLE}📊 Instalando KEDA...${NC}"
-helm install keda kedacore/keda --namespace keda --create-namespace
+# Configurando taints
+echo -e "${RED}🏷️  Aplicando taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT
 echo
 
+echo -e "${BLUE}🚀 Instalando ArgoCD...${NC}"
+
 # Instalando ArgoCD
-echo -e "${CYAN}🔄 Instalando ArgoCD v7.8.5...${NC}"
-helm install argocd argo/argo-cd --version 7.8.5 --values ../values/values-argocd.yaml --namespace argocd --create-namespace
+echo -e "${CYAN}🔄 Instalando ArgoCD v${ARGOCD_VERSION}...${NC}"
+helm install $ARGOCD_RELEASE_NAME argo/argo-cd --version $ARGOCD_VERSION --values $ARGOCD_VALUES_FILE --namespace $ARGOCD_NAMESPACE --create-namespace
 echo
 
 # Aguardando instalação
@@ -66,14 +90,9 @@ echo -e "${YELLOW}⏳ Aguardando 50 segundos...${NC}"
 sleep 50
 echo
 
-# Aplicando configuração inicial
-echo -e "${BLUE}⚙️  Aplicando configuração inicial do ArgoCD...${NC}"
-kubectl apply -f ../values/argocd-init.yaml
-echo
-
-# Configurando taints nos nós
-echo -e "${RED}🏷️  Aplicando taints nos nós manager...${NC}"
-kubectl taint nodes sdayspk06h101 sdayspk06h102 sdayspk06h103 controlplane=true:NoSchedule-
-echo
+# # Aplicando configuração inicial
+# echo -e "${BLUE}⚙️  Aplicando configuração inicial do ArgoCD...${NC}"
+# kubectl apply -f ../values/argocd-init.yaml
+# echo
 
 echo -e "${GREEN}✅ KEDA e ArgoCD instalados com sucesso!${NC}"

@@ -1,7 +1,7 @@
 # Longhorn Clean Production Values
 persistence:
   # Número de réplicas para cada volume (3 = alta disponibilidade)
-  defaultClassReplicaCount: 3
+  defaultClassReplicaCount: 2
   
   # Política de retenção - mantém dados mesmo se PVC for deletado
   reclaimPolicy: Retain
@@ -9,7 +9,14 @@ persistence:
 defaultSettings:
   # Remove snapshots automaticamente durante trim do filesystem
   removeSnapshotsDuringFilesystemTrim: enabled
-  
+  storageOverProvisioningPercentage: 100
+  storageMinimalAvailablePercentage: 15
+  autoCleanupSystemGeneratedSnapshot: true
+  autoDeletePodWhenVolumeDetachedUnexpectedly: true
+  orphanAutoDeletion: true
+
+  # NOVO: Reduz overhead de metadados e melhora performance
+  concurrentAutomaticEngineUpgradePerNodeLimit: 1
   # # Caminho onde o Longhorn armazena os dados nos nós
   # defaultDataPath: "/opt/longhorn"
   
@@ -25,8 +32,33 @@ defaultSettings:
   
   # Recuperação automática de volumes com problemas
   autoSalvage: true
+
+  # NOVO: Reduz uso de CPU/Memory dos componentes
+  upgradeChecker: false
   
   # Desabilita snapshots automáticos
   recurringJobSelector: ""
   snapshotDataIntegrity: disabled
   snapshotDataIntegrityImmediateCheckAfterSnapshotCreation: false
+  systemManagedPodsImagePullPolicy: IfNotPresent
+
+longhornUI:
+  # Réplicas da UI - pode ser reduzido para 1 se não precisar de HA
+  replicas: 1
+
+# CONFIGURAÇÕES ADICIONAIS para ambiente limitado
+ingress:
+  # Desabilita ingress se não precisar de acesso externo
+  enabled: false
+
+service:
+  ui:
+    # Usa NodePort se precisar de acesso, mais leve que LoadBalancer
+    type: NodePort
+
+    # CSI Driver com réplicas balanceadas (economia + disponibilidade)
+csi:
+  attacherReplicaCount: 2     # Padrão: 3 (crítico para anexar volumes)
+  provisionerReplicaCount: 2  # Padrão: 3 (importante para criar volumes)
+  resizerReplicaCount: 2      # Padrão: 3 (resize de volumes)
+  snapshotterReplicaCount: 0  # Padrão: 3 (desativado - não usa snapshots)

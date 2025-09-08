@@ -19,6 +19,31 @@
 
 set -e
 
+# =========================================================================
+# CONFIGURAÇÕES - EDITE AQUI CONFORME SUA NECESSIDADE
+# =========================================================================
+
+
+# Configurações do Vault
+VAULT_VERSION="0.30.1"
+VAULT_NAMESPACE="vault"
+VAULT_RELEASE_NAME="vault"
+VAULT_VALUES_FILE="../values/values-vault.yaml"
+
+# Nós para aplicar taints (separados por espaço)
+TAINT_NODES=""
+
+
+# Configurações do taint
+TAINT_KEY="controlplane"
+TAINT_VALUE="true"
+TAINT_EFFECT="NoSchedule"
+
+# Tempo de espera após instalação (segundos)
+WAIT_TIME="10"
+
+# =========================================================================
+
 # Cores
 GREEN='\033[1;32m'
 BLUE='\033[1;34m'
@@ -27,11 +52,16 @@ PURPLE='\033[1;35m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
+# Configurando taints
+echo -e "${RED}🏷️  Aplicando taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT
+echo
+
 echo -e "${BLUE}🔐 Configurando o Vault...${NC}"
 
 # Instalando Vault via Helm
 echo -e "${PURPLE}📦 Instalando chart do Vault...${NC}"
-helm install vault hashicorp/vault --namespace vault --values ../values/values-vault.yaml --version 0.29.1 --create-namespace
+helm install $VAULT_RELEASE_NAME hashicorp/vault --namespace $VAULT_NAMESPACE --values $VAULT_VALUES_FILE --version $VAULT_VERSION --create-namespace
 echo
 
 # Aguardando instalação
@@ -74,4 +104,12 @@ echo -e "${PURPLE}🔐 Fazendo login no Vault...${NC}"
 kubectl exec -n vault vault-0 -- vault login -no-print $ROOT_TOKEN
 echo
 
+# Removendo taints
+echo -e "${GREEN}🏷️  Removendo taints temporários...${NC}"
+kubectl taint nodes $TAINT_NODES $TAINT_KEY=$TAINT_VALUE:$TAINT_EFFECT-
+echo
+
 echo -e "${GREEN}✅ Vault configurado com sucesso!${NC}"
+echo
+echo -e "${CYAN}📋 Configuração aplicada:${NC}"
+echo -e "   Vault: $VAULT_RELEASE_NAME v$VAULT_VERSION"

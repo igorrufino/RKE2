@@ -10,8 +10,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://repo/repo/example_deployment_configs
-    targetRevision: devel
+    repoURL: https://bitbucket.org/repo/repo
+    targetRevision: release
     path: argocd
   destination:
     server: https://kubernetes.default.svc

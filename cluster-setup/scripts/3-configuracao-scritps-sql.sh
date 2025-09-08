@@ -44,10 +44,12 @@ K8S_SECRET_NAME="postgres-postgresql"
 # Para PostgreSQL EXTERNO, altere os valores acima:
 # PG_HOST="192.168.1.100"
 # PG_PASSWORD="sua_senha"
+# PG_USER="postgres"
+# PG_DATABASE="postgres"
 # USE_K8S_SECRET="false"
 
 VAULT_USER="vault_user"
-VAULT_PASSWORD="cJAHRHqezuxCMMW"
+VAULT_PASSWORD="password"
 
 # Função para obter senha do PostgreSQL
 get_postgres_password() {

@@ -48,10 +48,10 @@ echo
 
 # Criando secrets para ArgoCD
 echo -e "${YELLOW}🔗 Criando secrets repositórios ArgoCD...${NC}"
-kubectl exec -n vault vault-0 -- vault kv put argocd/helm-repo name="cedro-helm" url="https://bitbucket.org/cedrolab/helm" type="git" project="default" username="default" password="default"
+kubectl exec -n vault vault-0 -- vault kv put argocd/helm-repo name="cedro-helm" url="https://bitbucket.org/repo/helm" type="git" project="default" username="default" password="default"
 kubectl exec -n vault vault-0 -- vault kv put argocd/bitnami-helm-repo name="bitnami" url="https://charts.bitnami.com/bitnami" type="helm" project="default"
-kubectl exec -n vault vault-0 -- vault kv put argocd/deployment-repo name="cedro-config" url="https://bitbucket.org/cedrolab/daycoval_deployment_configs" type="git" project="default" username="default" password="default"
-kubectl exec -n vault vault-0 -- vault kv put argocd/devops-deploymen-repo url="https://bitbucket.org/cedrolab/devops_deployment_configs" type="git" username="default" password="default"
+kubectl exec -n vault vault-0 -- vault kv put argocd/deployment-repo name="cedro-config" url="https://bitbucket.org/repo/repo" type="git" project="default" username="default" password="default"
+kubectl exec -n vault vault-0 -- vault kv put argocd/devops-deploymen-repo url="https://bitbucket.org/repo/repo" type="git" username="default" password="default"
 echo
 
 # Criando secrets para Third-party
