@@ -75,7 +75,7 @@ echo
 
 # Instalando Longhorn
 echo -e "${GREEN}💿 Instalando Longhorn...${NC}"
-helm install longhorn longhorn/longhorn --values ../values/values-longhorn.yaml --namespace longhorn-system --create-namespace
+helm install longhorn longhorn/longhorn --values longhorn.yaml --namespace longhorn-system --create-namespace
 echo
 
 sleep 180
