@@ -1,0 +1,208 @@
+global:
+  dnsService: "rke2-coredns-rke2-coredns"
+  clusterDomain: "cluster.local"
+  dnsNamespace: "kube-system"
+
+# SimpleScalable modo padrão e recomendado
+deploymentMode: "SimpleScalable"
+
+loki:
+  auth_enabled: false
+
+  # Storage com MinIO
+  storage:
+    type: s3
+    bucketNames:
+      chunks: loki
+      ruler: loki
+      admin: loki
+    s3:
+      endpoint: minio.monitoring.svc.cluster.local:9000
+      insecure: true
+      s3ForcePathStyle: true
+      access_key_id: root
+      secret_access_key: supersecret80k
+      # Conexões reduzidas para poucos recursos
+      http_config:
+        idle_conn_timeout: 90s
+        response_header_timeout: 0s
+        insecure_skip_verify: true
+  commonConfig:
+    replication_factor: 1
+    compactor_address: "loki-backend.monitoring.svc.cluster.local:3100"
+    storage:
+      s3:
+        request_timeout: 5m
+        bulk_size: 20
+        parallel: 2
+    ring:
+      kvstore:
+        store: memberlist
+
+  # Schema TSDB v13
+  schemaConfig:
+    configs:
+    - from: 2025-09-11
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: loki_index_
+        period: 24h
+
+  # Limites muito conservadores para poucos recursos
+  limits_config:
+    # Streams reduzidos
+    max_global_streams_per_user: 10000
+    max_streams_per_user: 5000
+    max_entries_limit_per_query: 5000
+    max_label_names_per_series: 10
+    max_label_value_length: 1024
+    max_label_name_length: 512
+
+    # Ingestão limitada para não sobrecarregar
+    ingestion_rate_mb: 50
+    ingestion_burst_size_mb: 100
+    per_stream_rate_limit: 3MB
+    per_stream_rate_limit_burst: 5MB
+
+    # Query limitada
+    max_query_parallelism: 8
+    max_query_series: 1000
+    query_timeout: 3m
+
+    # Retenção - 7 dias (dados no MinIO)
+    retention_period: 168h
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+
+    # Cache conservador
+    max_cache_freshness_per_query: 10m
+    split_queries_by_interval: 30m
+
+  # Server com recursos mínimos
+  server:
+    http_listen_port: 3100
+    grpc_listen_port: 9095
+    log_level: error # Apenas erros para economizar
+    grpc_server_max_recv_msg_size: 4194304 # 4MB
+    grpc_server_max_send_msg_size: 4194304 # 4MB
+
+# Compactor - essencial mas com recursos mínimos
+compactor:
+  enabled: true
+  apply_retention_interval: 1h
+  compaction_interval: 30m # Menos frequente
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 50 # Reduzido
+  retention_enabled: true
+  working_directory: /var/loki/compactor
+
+# Ingester mínimo
+ingester:
+  replicas: 0 # Desabilitado para SimpleScalable
+  chunk_idle_period: 1h # Aumentado para economizar
+  chunk_target_size: 1048576 # 1MB
+  max_chunk_age: 2h
+  chunk_encoding: snappy
+  chunk_retain_period: 5m
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  # SEM persistência local
+  persistence:
+    enabled: false
+
+# Querier limitado
+querier:
+  enabled: false # Desabilitado para SimpleScalable
+  max_concurrent: 5
+  query_ingesters_within: 3h
+
+# Query Frontend mínimo
+queryFrontend:
+  enabled: false # Desabilitado para SimpleScalable
+  replicas: 0
+
+# Index Gateway mínimo
+indexGateway:
+  enabled: false
+  replicas: 0
+
+# Write path
+write:
+  replicas: 1
+  persistence:
+    enabled: false
+    size: 1Gi
+
+# Read path mínimo
+read:
+  replicas: 1
+  persistence:
+    enabled: false
+
+# Backend - AJUSTADO PARA 1GB
+backend:
+  replicas: 1
+  persistence:
+    enabled: false
+    size: 1Gi
+
+# Cache MUITO reduzido mas ainda essencial
+chunksCache:
+  enabled: true
+  replicas: 1
+  allocatedMemory: 512 # Apenas 512MB
+  maxItemMemory: 2
+  defaultValidity: 12h
+
+resultsCache:
+  enabled: true
+  replicas: 1
+  allocatedMemory: 128 # Apenas 128MB
+  defaultValidity: 12h
+
+# Cache de deduplicação mínimo
+memcachedIndexWrites:
+  enabled: true
+  replicas: 1
+  allocatedMemory: 128
+
+# Desabilitar todo o resto
+memcachedChunks:
+  enabled: false
+
+memcachedFrontend:
+  enabled: false
+
+memcachedIndexQueries:
+  enabled: false
+
+test:
+  enabled: false
+
+singleBinary:
+  replicas: 0
+  persistence:
+    enabled: false
+
+lokiCanary:
+  enabled: false
+
+gateway:
+  enabled: false
+
+monitoring:
+  dashboards:
+    enabled: false
+  rules:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false

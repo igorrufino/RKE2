@@ -1,0 +1,178 @@
+nodeExporter:
+  enabled: true
+  operatingSystems:
+    linux:
+      enabled: true
+    darwin:
+      enabled: false
+kubeProxy:
+  enabled: false
+defaultRules:
+  rules:
+    kubeProxy: false
+grafana:
+  grafana.ini:
+    server:
+      root_url: https://grafana-dev.stonex.dev.br
+  adminPassword: 3J~p?JOQ"!R=%mUAc40k
+  defaultDashboardsEnabled: false
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: longhorn
+    accessModes:
+    - ReadWriteOnce
+    size: 2Gi
+    finalizers:
+    - kubernetes.io/pvc-protection
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        url: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+        jsonData:
+          timeInterval: 60s
+          exemplarTraceIdDestinations:
+          - name: traceID
+            datasourceUid: tempo
+            urlDisplayLabel: 'Trace: $${__value.raw}'
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        url: http://tempo-query-frontend.monitoring.svc.cluster.local:3100
+        jsonData:
+          tracesToLogsV2:
+            customQuery: true
+            datasourceUid: 'loki'
+            query: '{$${__tags}} | trace_id = "$${__trace.traceId}"'
+            tags:
+            - key: 'service.name'
+              value: 'service_name'
+          serviceMap:
+            datasourceUid: 'prometheus'
+          search:
+            hide: false
+          nodeGraph:
+            enabled: true
+          lokiSearch:
+            datasourceUid: 'loki'
+      - name: Loki
+        type: loki
+        uid: loki
+        url: http://loki-read.monitoring.svc.cluster.local:3100
+        jsonData:
+          derivedFields:
+          - name: 'trace_id'
+            matcherType: 'label'
+            matcherRegex: 'trace_id'
+            url: '$${__value.raw}'
+            datasourceUid: 'tempo'
+            urlDisplayLabel: 'Trace: $${__value.raw}'
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      folder: /tmp/dashboards
+      provider:
+        allowUiUpdates: true
+        foldersFromFilesStructure: true
+prometheusOperator:
+  enabled: true
+  tls:
+    enabled: false
+  admissionWebhooks:
+    enabled: false
+coreDns:
+  enabled: false
+kubelet:
+  enabled: true
+  namespace: kube-system
+kubeStateMetrics:
+  enabled: true
+kube-state-metrics:
+  prometheus:
+    monitor:
+      enabled: true
+kubeDns:
+  enabled: true
+prometheus:
+  prometheusSpec:
+    enableFeatures:
+    - exemplar-storage
+    - native-histograms
+    additionalArgs:
+    - name: web.enable-remote-write-receiver
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    additionalScrapeConfigs:
+    - job_name: 'opentelemetry-collector'
+      static_configs:
+      - targets:
+        - opentelemetry-opentelemetry-collector.monitoring.svc.cluster.local:8888
+    - job_name: 'pushgateway'
+      honor_labels: true
+      kubernetes_sd_configs:
+      - role: service
+        namespaces:
+          names:
+          - monitoring
+      relabel_configs:
+      - source_labels: [ __meta_kubernetes_service_name ]
+        action: keep
+        regex: prom-pushgateway-prometheus-pushgateway
+    - job_name: 'istiod'
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+          - istio-system
+      relabel_configs:
+      - source_labels: [ __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name ]
+        action: keep
+        regex: istiod;http-monitoring
+    - job_name: 'envoy-stats'
+      metrics_path: /stats/prometheus
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels: [ __meta_kubernetes_pod_container_port_name ]
+        action: keep
+        regex: '.*-envoy-prom'
+      - source_labels: [ __meta_kubernetes_namespace ]
+        action: drop # Esta ação descarta os alvos que correspondem ao regex
+        regex: monitoring|default| # Nomes das namespaces que você deseja excluir
+      - source_labels: [ __address__ ]
+        action: replace
+        regex: ([^:]+)(?::\d+)?
+        replacement: $1:15090
+        target_label: __address__
+    - job_name: 'rabbitmq'
+      metrics_path: /metrics
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - default
+      relabel_configs:
+      - source_labels: [ __meta_kubernetes_pod_name ]
+        action: keep
+        regex: rabbitmq-(0|1)
+      - source_labels: [ __meta_kubernetes_pod_container_port_number ]
+        action: drop
+        regex: (5672|15672|25672|4369)
+      - source_labels: [ __address__, __meta_kubernetes_pod_container_port_number ]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;9419
+        replacement: ${1}:9419
+        target_label: __address__
+      - source_labels: [ __meta_kubernetes_namespace ]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [ __meta_kubernetes_pod_name ]
+        action: replace
+        target_label: kubernetes_pod_name

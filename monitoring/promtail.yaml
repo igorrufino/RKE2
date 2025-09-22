@@ -1,0 +1,71 @@
+        config:
+          clients:
+            - url:  http://loki-write.monitoring.svc.cluster.local:3100/loki/api/v1/push
+          snippets:
+            pipelineStages:
+              - cri: {}
+            extraScrapeConfigs: |
+              # Add an additional scrape config for syslog
+              - job_name: rke-audit
+                static_configs:
+                - targets:
+                  - localhost
+                  labels:
+                    job: rke/audit
+                    __path__: /var/log/host/audit/*.log
+                    hostname: '${HOSTNAME}'
+                - targets:
+                  - localhost
+                  labels:
+                    job: node/secure
+                    __path__: /var/log/host/secure
+                    hostname: '${HOSTNAME}'
+              - job_name: systemd-journal
+                journal:
+                  json: false
+                  max_age: 12h
+                  labels:
+                    job: host/systemd-journal
+                  path: /var/log/journal
+                relabel_configs:
+                - source_labels:
+                  - __journal__systemd_unit
+                  target_label: systemd_unit
+                - source_labels:
+                  - __journal__hostname
+                  target_label: hostname
+                - source_labels:
+                  - __journal_syslog_identifier
+                  target_label: syslog_identifier
+              - job_name: node-syslog
+                static_configs:
+                - targets:
+                  - localhost
+                  labels:
+                    job: node/syslog
+                    __path__: /var/log/host/syslog
+        containerSecurityContext:
+          privileged: true
+          allowPrivilegeEscalation: true
+        extraArgs:
+          - -config.expand-env=true
+        extraVolumes:
+          - name: journal
+            hostPath:
+              path: /var/log/journal
+          - name: machine-id
+            hostPath:
+              path: /etc/machine-id
+          - name: node-logs
+            hostPath:
+              path: /var/log
+        extraVolumeMounts:
+          - name: journal
+            mountPath: /var/log/journal
+            readOnly: true
+          - name: machine-id
+            mountPath: /etc/machine-id
+            readOnly: true
+          - name: node-logs
+            mountPath: /var/log/host
+            readOnly: true

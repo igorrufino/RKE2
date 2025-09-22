@@ -1,0 +1,38 @@
+mode: standalone
+rootUser: root
+rootPassword: supersecret80k
+buckets:
+- name: loki
+  policy: none
+  purge: false
+- name: tempo
+  policy: none
+  purge: false
+persistence:
+  size: 5Gi
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+environment:
+  # Reduz threads e workers
+  MINIO_API_REQUESTS_MAX: "100"
+  MINIO_API_REQUESTS_DEADLINE: "30s"
+  GOMAXPROCS: "2"
+  # Cache reduzido
+  MINIO_CACHE: "off"
+  # Compressão para economizar espaço
+  MINIO_COMPRESS: "true"
+  MINIO_COMPRESS_EXTENSIONS: ".txt,.log,.csv,.json"
+  MINIO_COMPRESS_MIME_TYPES: "text/*,application/json"
+# Sem replicas adicionais
+replicas: 1
+
+# Desabilitar features não essenciais
+etcd:
+  enabled: false
+
+tls:
+  enabled: false
+
+user: []

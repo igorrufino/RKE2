@@ -1,0 +1,17 @@
+# Adicionar repositórios
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add minio https://charts.min.io/
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# Criar namespace
+kubectl create namespace monitoring
+
+# Instalar componentes
+helm install minio minio/minio --version 5.3.0 --namespace monitoring --values minio.yaml
+helm install promtail grafana/promtail --version 6.17.0 --namespace monitoring --values promtail.yaml
+helm install prometheus prometheus-community/kube-prometheus-stack --version 75.18.1 --namespace monitoring --values prometheus.yaml
+
+helm install loki grafana/loki --version 6.35.1 --namespace monitoring --values loki.yaml
+
+
